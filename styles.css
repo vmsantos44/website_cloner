@@ -63,6 +63,60 @@ h2 {
     margin-bottom: 1rem;
 }
 
+.error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.error-header h3 {
+    color: #e74c3c;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.error-time {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.error-content {
+    color: #2c3e50;
+}
+
+.error-message {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.error-url {
+    font-family: monospace;
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    word-break: break-all;
+}
+
+.error-domain {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.no-data {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .loading {
     text-align: center;
     color: #7f8c8d;

@@ -55,16 +55,35 @@ async function fetchRecentErrors() {
         
         querySnapshot.forEach((doc) => {
             const data = doc.data();
+            // Skip entries with undefined error_message
+            if (!data.error_message) return;
+            
             const errorElement = document.createElement('div');
             errorElement.className = 'error-card';
+            
+            // Format the error message for better readability
+            const errorMessage = data.error_message.split(' for url:')[0];
+            const urlMessage = data.error_message.includes(' for url:') ? 
+                data.error_message.split(' for url:')[1].trim() : '';
+            
             errorElement.innerHTML = `
-                <h3>Error in ${data.domain || 'Unknown Domain'}</h3>
-                <p>URL: ${data.url || 'N/A'}</p>
-                <p>Error: ${data.error_message || 'Unknown Error'}</p>
-                <p>Time: ${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'N/A'}</p>
+                <div class="error-header">
+                    <h3>${data.error_type || 'Unknown Error'}</h3>
+                    <span class="error-time">${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'N/A'}</span>
+                </div>
+                <div class="error-content">
+                    <p class="error-message">${errorMessage}</p>
+                    ${urlMessage ? `<p class="error-url">URL: ${urlMessage}</p>` : ''}
+                    <p class="error-domain">Domain: ${data.domain || 'Unknown Domain'}</p>
+                </div>
             `;
             errorsContainer.appendChild(errorElement);
         });
+        
+        // Show message if no errors
+        if (errorsContainer.children.length === 0) {
+            errorsContainer.innerHTML = '<p class="no-data">No errors found</p>';
+        }
     } catch (error) {
         console.error("Error fetching errors:", error);
         document.getElementById('recent-errors').innerHTML = `<p class="error">Error loading error logs: ${error.message}</p>`;
