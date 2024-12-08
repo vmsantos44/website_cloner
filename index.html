@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Cloner Dashboard</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Website Cloner Dashboard</span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent Cloning Sessions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="sessions-list" class="list-group">
+                            <!-- Sessions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Latest Errors</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="errors-list" class="list-group">
+                            <!-- Errors will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h6>Total Sessions</h6>
+                                    <p id="total-sessions">0</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h6>Total Downloads</h6>
+                                    <p id="total-downloads">0</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h6>Success Rate</h6>
+                                    <p id="success-rate">0%</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h6>Total Errors</h6>
+                                    <p id="total-errors">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaEYMMxr2ZoFbimp_jmEbVv2s94AIpkcM",
+            authDomain: "clone-websites.firebaseapp.com",
+            projectId: "clone-websites",
+            storageBucket: "clone-websites.firebasestorage.app",
+            messagingSenderId: "885061123776",
+            appId: "1:885061123776:web:d4664ff3c89c4231ad7725"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Function to format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate();
+            return date.toLocaleString();
+        }
+
+        // Function to update sessions list
+        function updateSessions() {
+            const sessionsList = document.getElementById('sessions-list');
+            db.collection('cloning_stats')
+                .orderBy('start_time', 'desc')
+                .limit(5)
+                .onSnapshot((snapshot) => {
+                    sessionsList.innerHTML = '';
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const successRate = data.total_urls_processed ? 
+                            ((data.successful_downloads / data.total_urls_processed) * 100).toFixed(1) : 0;
+                        
+                        const html = `
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${data.domain}</h6>
+                                    <small>${formatTimestamp(data.start_time)}</small>
+                                </div>
+                                <p class="mb-1">Status: ${data.status}</p>
+                                <small>Success Rate: ${successRate}% (${data.successful_downloads}/${data.total_urls_processed})</small>
+                            </div>
+                        `;
+                        sessionsList.innerHTML += html;
+                    });
+                });
+        }
+
+        // Function to update errors list
+        function updateErrors() {
+            const errorsList = document.getElementById('errors-list');
+            db.collection('website_errors')
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .onSnapshot((snapshot) => {
+                    errorsList.innerHTML = '';
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const html = `
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${data.error_type}</h6>
+                                    <small>${formatTimestamp(data.timestamp)}</small>
+                                </div>
+                                <p class="mb-1">${data.error_message}</p>
+                                <small>URL: ${data.url}</small>
+                            </div>
+                        `;
+                        errorsList.innerHTML += html;
+                    });
+                });
+        }
+
+        // Function to update statistics
+        function updateStats() {
+            Promise.all([
+                db.collection('cloning_stats').get(),
+                db.collection('website_errors').get()
+            ]).then(([sessionsSnapshot, errorsSnapshot]) => {
+                const totalSessions = sessionsSnapshot.size;
+                let totalDownloads = 0;
+                let successfulDownloads = 0;
+
+                sessionsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalDownloads += data.total_urls_processed || 0;
+                    successfulDownloads += data.successful_downloads || 0;
+                });
+
+                const successRate = totalDownloads ? 
+                    ((successfulDownloads / totalDownloads) * 100).toFixed(1) : 0;
+
+                document.getElementById('total-sessions').textContent = totalSessions;
+                document.getElementById('total-downloads').textContent = totalDownloads;
+                document.getElementById('success-rate').textContent = `${successRate}%`;
+                document.getElementById('total-errors').textContent = errorsSnapshot.size;
+            });
+        }
+
+        // Initialize dashboard
+        updateSessions();
+        updateErrors();
+        updateStats();
+
+        // Update stats every 30 seconds
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>
